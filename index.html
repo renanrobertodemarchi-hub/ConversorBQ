@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor BQ Premium</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- JSZip for creating Zip files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="glass-panel main-header">
+            <div class="header-content">
+                <div class="logo-area">
+                    <i class="fa-solid fa-layer-group fa-2x gradient-text"></i>
+                    <h1 class="gradient-text">Conversor BQ</h1>
+                </div>
+                <p class="subtitle">Converta suas questões para o formato Moodle XML com facilidade.</p>
+            </div>
+            <div class="header-actions">
+                <button id="btn-export" class="btn btn-primary shadow-glow">
+                    <i class="fa-solid fa-file-export"></i> Gerar XML
+                </button>
+            </div>
+        </header>
+
+        <main id="questions-container">
+            <!-- As questões serão adicionadas aqui dinamicamente -->
+        </main>
+
+        <div class="add-action-area">
+            <button id="btn-add-question" class="btn btn-secondary shadow-glow">
+                <i class="fa-solid fa-plus"></i> Adicionar Nova Questão
+            </button>
+        </div>
+    </div>
+
+    <!-- Template de Questão (Invisível) -->
+    <template id="question-template">
+        <div class="question-card glass-panel fade-in">
+            <div class="question-header">
+                <h3 class="question-title">Questão <span class="q-number"></span></h3>
+                <button class="btn-icon btn-danger btn-remove" title="Remover Questão">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <i class="fa-solid fa-align-left"></i> Enunciado 
+                    <span class="tooltip-icon" title="Você pode digitar texto, formatar e colar imagens (Ctrl+V) diretamente aqui!"><i class="fa-solid fa-circle-info"></i></span>
+                </label>
+                <!-- Toolbar do Editor -->
+                <div class="editor-toolbar">
+                    <button type="button" class="btn-toolbar" data-command="bold" title="Negrito"><i class="fa-solid fa-bold"></i></button>
+                    <button type="button" class="btn-toolbar" data-command="italic" title="Itálico"><i class="fa-solid fa-italic"></i></button>
+                    <button type="button" class="btn-toolbar" data-command="underline" title="Sublinhado"><i class="fa-solid fa-underline"></i></button>
+                    <span class="divider"></span>
+                    <label class="btn-toolbar btn-upload" title="Inserir Imagem do PC">
+                        <i class="fa-solid fa-image"></i>
+                        <input type="file" class="image-upload-input" accept="image/png, image/jpeg, image/jpg" style="display: none;">
+                    </label>
+                </div>
+                <!-- Área Editável Rica -->
+                <div class="rich-editor enunciado-editor" contenteditable="true" placeholder="Digite o enunciado ou cole um print aqui..."></div>
+            </div>
+
+            <div class="alternatives-section">
+                <label><i class="fa-solid fa-list-ul"></i> Alternativas</label>
+                <p class="help-text">Selecione a bolinha da alternativa correta.</p>
+                <div class="alternatives-list">
+                    <!-- Alternativas dinâmicas -->
+                </div>
+                <button class="btn btn-outline btn-add-alt">
+                    <i class="fa-solid fa-plus"></i> Adicionar Alternativa
+                </button>
+            </div>
+
+            <div class="form-group mt-4">
+                <label><i class="fa-solid fa-comment-dots"></i> Feedback Geral (Opcional)</label>
+                <div class="rich-editor feedback-editor" contenteditable="true" placeholder="Texto de feedback exibido ao aluno após responder..."></div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Template de Alternativa -->
+    <template id="alternative-template">
+        <div class="alternative-item">
+            <div class="radio-wrapper">
+                <input type="radio" name="correct-##QID##" class="correct-radio" title="Marcar como correta">
+                <div class="radio-custom"></div>
+            </div>
+            <div class="rich-editor alternative-editor" contenteditable="true" placeholder="Texto da alternativa..."></div>
+            <button class="btn-icon btn-danger btn-remove-alt" title="Remover Alternativa">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </template>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden">
+        <div class="spinner"></div>
+        <p>Gerando arquivos...</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

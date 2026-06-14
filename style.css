@@ -1,0 +1,461 @@
+:root {
+    --bg-color: #0f111a; /* Fundo escuro neutro premium (sem verde da Unicv) */
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --accent-color: #18E382; /* Malachite da sua paleta */
+    --accent-hover: #00FF87; /* Spring Green da sua paleta */
+    --gradient-start: #00FF87; 
+    --gradient-end: #30C77D; /* Emerald da sua paleta */
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+    --success: #0CF185;
+    --surface: #1e212b; /* Superfície neutra */
+    --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    /* Subtle animated background gradient */
+    background: radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.1), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.1), transparent 25%),
+                var(--bg-color);
+    background-attachment: fixed;
+}
+
+.app-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    box-shadow: var(--shadow-soft);
+}
+
+/* Header */
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.main-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.gradient-text {
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    font-family: inherit;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 255, 135, 0.4);
+}
+
+.btn-secondary {
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px dashed var(--glass-border);
+    padding: 0.5rem 1rem;
+}
+
+.btn-outline:hover {
+    color: var(--text-primary);
+    border-color: var(--accent-color);
+    background: rgba(0, 255, 135, 0.05);
+}
+
+.btn-icon {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.btn-danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+}
+
+/* Shadows */
+.shadow-glow {
+    position: relative;
+}
+.shadow-glow::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: 0 0 20px rgba(0, 255, 135, 0.4);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+}
+.shadow-glow:hover::after {
+    opacity: 1;
+}
+
+/* Question Cards */
+#questions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.question-card {
+    padding: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+.question-card:focus-within {
+    border-color: rgba(0, 255, 135, 0.3);
+    box-shadow: 0 0 0 1px rgba(0, 255, 135, 0.3), var(--shadow-soft);
+}
+
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.question-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.tooltip-icon {
+    cursor: help;
+    color: var(--accent-color);
+}
+
+.mt-4 { margin-top: 1.5rem; }
+
+/* Rich Editor Toolbar */
+.editor-toolbar {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+}
+
+.btn-toolbar {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-toolbar:hover, .btn-toolbar.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.divider {
+    width: 1px;
+    background: var(--glass-border);
+    margin: 0 0.5rem;
+}
+
+/* Rich Editor */
+.rich-editor {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 0 0 8px 8px;
+    padding: 1rem;
+    color: var(--text-primary);
+    min-height: 100px;
+    outline: none;
+    transition: all 0.3s;
+    line-height: 1.5;
+}
+
+/* For alternatives that don't need toolbar, rounded all borders */
+.alternative-editor {
+    border-radius: 8px;
+    min-height: 48px;
+    padding: 0.75rem 1rem;
+    flex: 1;
+}
+
+.rich-editor:focus {
+    border-color: var(--accent-color);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.rich-editor[placeholder]:empty:before {
+    content: attr(placeholder);
+    color: #64748b;
+    pointer-events: none;
+    display: block; /* For Firefox */
+}
+
+.rich-editor img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 0.5rem 0;
+    border: 1px solid var(--glass-border);
+}
+
+/* Alternatives Section */
+.alternatives-section {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+}
+
+.alternatives-section label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.help-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.alternatives-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.alternative-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    position: relative;
+}
+
+/* Custom Radio Button */
+.radio-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding-top: 0.75rem; /* Align with first line of text */
+}
+
+.correct-radio {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 24px;
+    width: 24px;
+    z-index: 2;
+}
+
+.radio-custom {
+    height: 24px;
+    width: 24px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 2px solid var(--text-secondary);
+    border-radius: 50%;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.radio-custom:after {
+    content: "";
+    position: absolute;
+    display: none;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 10px var(--success);
+}
+
+.correct-radio:hover ~ .radio-custom {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.correct-radio:checked ~ .radio-custom {
+    border-color: var(--success);
+}
+
+.correct-radio:checked ~ .radio-custom:after {
+    display: block;
+}
+
+.btn-remove-alt {
+    margin-top: 0.25rem;
+}
+
+/* Actions */
+.add-action-area {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+/* Animations */
+.fade-in {
+    animation: fadeIn 0.4s ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Loading Overlay */
+#loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 17, 26, 0.8);
+    backdrop-filter: blur(4px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    color: white;
+}
+
+#loading-overlay.hidden {
+    display: none;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-left-color: var(--accent-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .main-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+    }
+}
