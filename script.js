@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // === CONFIGURAÇÕES ===
     // Define em quantos arquivos o banco de questões será dividido no momento da exportação.
-    // Isso é mantido invisível na UI como solicitado.
+    // Isso é mantido invisível na UI.
     const CONFIG = {
         NUM_BANCOS: 2,
         MAX_IMAGE_WIDTH: 700,  // Largura máxima para imagens (em pixels).
@@ -80,11 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const editor = altItem.querySelector('.alternative-editor');
-        setupImagePaste(editor); // Suporta imagem na alternativa também!
+        setupImagePaste(editor); // Suporta imagem na alternativa também
 
         altItem.querySelector('.btn-remove-alt').addEventListener('click', () => {
             if (listElement.children.length > 2) {
-                // Se o rádio removido estava marcado, marca o primeiro
+                // Se o radio removido estava marcado, marca o primeiro
                 const wasChecked = radio.checked;
                 altItem.remove();
                 if (wasChecked && listElement.children.length > 0) {
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const command = btn.dataset.command;
                 document.execCommand(command, false, null);
                 
-                // Retorna o foco para o editor ativo (gambiarra simples: foca no enunciado se ninguem tiver foco)
+                // Retorna o foco para o editor ativo (gambiarra: foca no enunciado se ninguem tiver foco)
                 const active = document.activeElement;
                 if (!active || !active.classList.contains('rich-editor')) {
                     card.querySelector('.enunciado-editor').focus();
@@ -195,11 +195,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function insertImageAtCursorOrEnd(editorElement, base64Url) {
         editorElement.focus();
-        // document.execCommand insere onde o cursor está na div contenteditable!
+        // document.execCommand insere onde o cursor está na div contenteditable
         document.execCommand('insertImage', false, base64Url);
     }
 
-    // === FUNÇÕES DE EXPORTAÇÃO (XML MOODLE) ===
+    // === FUNÇÕES DE EXPORTAÇÃO (XML MOODLE)
 
     async function exportXML(numArquivos) {
         const cards = questionsContainer.querySelectorAll('.question-card');
@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
             xml.push(`      <text><![CDATA[Questão ${num}]]></text>`);
             xml.push('    </name>');
             
-            // Tratamento Básico para CDATA aninhado (embora raro em editores HTML puros)
+            // Tratamento Básico para CDATA aninhado
             let enunciadoText = q.enunciado || "Enunciado vazio";
             
             xml.push('    <questiontext format="html">');
