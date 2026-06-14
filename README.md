@@ -1,10 +1,10 @@
-# 📘 Conversor BQ - Documentação Completa
+# 📘 Conversor BQ
 
-Uma ferramenta web **gratuita e de código aberto** para converter questões de múltipla escolha diretamente para o formato **Moodle XML**, pronta para importação no banco de questões do AVA. Funciona 100% no navegador — sem instalação, sem servidor, sem cadastro.
+Uma ferramenta web para converter questões de múltipla escolha diretamente para o formato **Moodle XML**, pronta para importação no banco de questões do AVA. Funciona 100% no navegador.
 
 ---
 
-## ✨ Funcionalidades
+## Funcionalidades
 
 - **Editor de questões rico e intuitivo**: Crie quantas questões quiser em uma única sessão.
 - **Formatação de texto**: Negrito, Itálico e Sublinhado diretamente no enunciado e nas alternativas.
@@ -13,12 +13,12 @@ Uma ferramenta web **gratuita e de código aberto** para converter questões de 
   - Ou envie um arquivo do seu computador clicando no ícone 🖼️.
   - Imagens grandes são redimensionadas automaticamente para evitar arquivos pesados.
 - **Alternativas dinâmicas**: Adicione ou remova alternativas livremente. Marque a correta clicando na bolinha.
-- **Feedback geral**: Adicione um texto de feedback que o aluno verá após responder.
+- **Feedback geral**: Adicione um texto de feedback.
 - **Exportação inteligente**: Gera os bancos de questões já divididos e nomeados corretamente, prontos para o Moodle.
 
 ---
 
-## 🚀 Como usar
+## Como usar
 
 ### 1. Preencher uma questão
 Cada bloco representa uma questão do banco. Você pode:
@@ -42,7 +42,7 @@ Clique no botão **"Gerar XML"** no topo da página. O navegador vai baixar auto
 
 ---
 
-## 📥 Importando no Moodle
+## Importando no Moodle
 
 1. Acesse sua disciplina no Moodle.
 2. Vá em **Banco de Questões** > **Importar**.
@@ -52,15 +52,15 @@ Clique no botão **"Gerar XML"** no topo da página. O navegador vai baixar auto
 
 ---
 
-## 🖼️ Sobre as imagens
+## Sobre as imagens
 
-As imagens inseridas (seja via `Ctrl+V` ou upload) são convertidas automaticamente para o formato **Base64**, que é a forma que o Moodle aceita imagens embutidas diretamente no XML, **sem depender de links externos**. Isso garante que as imagens apareçam corretamente mesmo que o arquivo XML seja importado em outro ambiente ou instituição.
+As imagens inseridas (seja via `Ctrl+V` ou upload) são convertidas automaticamente para o formato **Base64**, que é a forma que o Moodle aceita imagens embutidas diretamente no XML, **sem depender de links externos**. Isso garante que as imagens apareçam corretamente mesmo que o arquivo XML seja importado em outro ambiente.
 
 Imagens maiores que o limite configurado são redimensionadas proporcionalmente e sem distorção antes de serem inseridas.
 
 ---
 
-## ⚙️ Configurações Avançadas (para desenvolvedores)
+## Configurações Avançadas (para desenvolvedores)
 
 As configurações da ferramenta ficam no início do arquivo `script.js`:
 
@@ -78,7 +78,7 @@ const CONFIG = {
 
 ---
 
-## 🛠️ Tecnologias utilizadas
+## Tecnologias utilizadas
 
 | Tecnologia | Uso |
 |---|---|
@@ -94,6 +94,6 @@ const CONFIG = {
 
 ---
 
-## 📄 Licença
+## Licença
 
 Este projeto é de uso livre para fins educacionais e institucionais.
