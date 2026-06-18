@@ -1,13 +1,13 @@
 :root {
-    --bg-color: #0f111a; /* Fundo escuro neutro */
+    --bg-color: #0f111a; /* Fundo escuro neutro premium (sem verde da Unicv) */
     --glass-bg: rgba(255, 255, 255, 0.03);
     --glass-border: rgba(255, 255, 255, 0.08);
     --text-primary: #e2e8f0;
     --text-secondary: #94a3b8;
-    --accent-color: #18E382; /* Malachite da paleta */
-    --accent-hover: #00FF87; /* Spring Green da paleta */
+    --accent-color: #18E382; /* Malachite da sua paleta */
+    --accent-hover: #00FF87; /* Spring Green da sua paleta */
     --gradient-start: #00FF87; 
-    --gradient-end: #30C77D; /* Emerald da paleta */
+    --gradient-end: #30C77D; /* Emerald da sua paleta */
     --danger: #ef4444;
     --danger-hover: #dc2626;
     --success: #0CF185;

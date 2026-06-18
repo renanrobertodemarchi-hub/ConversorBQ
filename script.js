@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // === CONFIGURAÇÕES ===
     // Define em quantos arquivos o banco de questões será dividido no momento da exportação.
-    // Isso é mantido invisível na UI.
+    // Isso é mantido invisível na UI como solicitado.
     const CONFIG = {
         NUM_BANCOS: 2,
         MAX_IMAGE_WIDTH: 700,  // Largura máxima para imagens (em pixels).
@@ -80,11 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const editor = altItem.querySelector('.alternative-editor');
-        setupImagePaste(editor); // Suporta imagem na alternativa também
+        setupImagePaste(editor); // Suporta imagem na alternativa também!
 
         altItem.querySelector('.btn-remove-alt').addEventListener('click', () => {
             if (listElement.children.length > 2) {
-                // Se o radio removido estava marcado, marca o primeiro
+                // Se o rádio removido estava marcado, marca o primeiro
                 const wasChecked = radio.checked;
                 altItem.remove();
                 if (wasChecked && listElement.children.length > 0) {
@@ -108,23 +108,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setupToolbar(card) {
         const buttons = card.querySelectorAll('.btn-toolbar[data-command]');
+        const enunciadoEditor = card.querySelector('.enunciado-editor');
+        
+        const updateState = () => {
+            buttons.forEach(btn => {
+                const command = btn.dataset.command;
+                if (command && command !== 'insertImage') {
+                    if (document.queryCommandState(command)) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                }
+            });
+        };
+
+        enunciadoEditor.addEventListener('keyup', updateState);
+        enunciadoEditor.addEventListener('mouseup', updateState);
+
         buttons.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault(); // Impede perda de foco
                 const command = btn.dataset.command;
                 document.execCommand(command, false, null);
                 
-                // Retorna o foco para o editor ativo (gambiarra: foca no enunciado se ninguem tiver foco)
+                updateState();
+                
+                // Retorna o foco para o editor ativo (gambiarra simples: foca no enunciado se ninguem tiver foco)
                 const active = document.activeElement;
                 if (!active || !active.classList.contains('rich-editor')) {
-                    card.querySelector('.enunciado-editor').focus();
+                    enunciadoEditor.focus();
                 }
             });
         });
 
         // Botão de Upload de Imagem
         const uploadInput = card.querySelector('.image-upload-input');
-        const enunciadoEditor = card.querySelector('.enunciado-editor');
         
         uploadInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -195,11 +214,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function insertImageAtCursorOrEnd(editorElement, base64Url) {
         editorElement.focus();
-        // document.execCommand insere onde o cursor está na div contenteditable
+        // document.execCommand insere onde o cursor está na div contenteditable!
         document.execCommand('insertImage', false, base64Url);
     }
 
-    // === FUNÇÕES DE EXPORTAÇÃO (XML MOODLE)
+    // === FUNÇÕES DE EXPORTAÇÃO (XML MOODLE) ===
 
     async function exportXML(numArquivos) {
         const cards = questionsContainer.querySelectorAll('.question-card');
@@ -305,7 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
             xml.push(`      <text><![CDATA[Questão ${num}]]></text>`);
             xml.push('    </name>');
             
-            // Tratamento Básico para CDATA aninhado
+            // Tratamento Básico para CDATA aninhado (embora raro em editores HTML puros)
             let enunciadoText = q.enunciado || "Enunciado vazio";
             
             xml.push('    <questiontext format="html">');
