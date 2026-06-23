@@ -385,61 +385,105 @@ document.addEventListener('DOMContentLoaded', () => {
         return roman_num;
     }
 
-    // === IMPORTAÇÃO DE DOCX (MAMMOTH) ===
+    // === IMPORTAÇÃO DE DOCX (JSZIP + XMLDOM NATIVO) ===
     const docxUpload = document.getElementById('docx-upload');
     if (docxUpload) {
         docxUpload.addEventListener('change', handleDocxUpload);
     }
 
-    function handleDocxUpload(e) {
+    async function handleDocxUpload(e) {
         const file = e.target.files[0];
         if (!file) return;
 
         loadingOverlay.classList.remove('hidden');
-        const reader = new FileReader();
-        
-        reader.onload = function(event) {
-            const arrayBuffer = event.target.result;
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const zip = await JSZip.loadAsync(arrayBuffer);
+            const documentXml = await zip.file('word/document.xml').async('string');
             
-            // Mammoth convertImage option to mark images instead of rendering base64
-            const options = {
-                convertImage: mammoth.images.imgElement(function(image) {
-                    return Promise.resolve({ src: "IMAGEM_DETECTADA" });
-                })
-            };
-
-            mammoth.convertToHtml({arrayBuffer: arrayBuffer}, options)
-                .then(function(result) {
-                    const html = result.value; 
-                    processParsedHTML(html);
-                })
-                .catch(function(err) {
-                    console.error(err);
-                    alert("Erro ao ler o arquivo DOCX.");
-                })
-                .finally(function() {
-                    loadingOverlay.classList.add('hidden');
-                    docxUpload.value = ''; // reseta o input
-                });
-        };
-        
-        reader.readAsArrayBuffer(file);
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(documentXml, 'text/xml');
+            
+            const lines = extractLinesFromDocx(doc);
+            processParsedLines(lines);
+        } catch (err) {
+            console.error(err);
+            alert("Erro ao ler o arquivo DOCX.");
+        } finally {
+            loadingOverlay.classList.add('hidden');
+            docxUpload.value = ''; // redefine o campo
+        }
     }
 
-    function processParsedHTML(html) {
-        // Cria um elemento temporário em memória para facilitar a manipulação do DOM virtual.
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = html;
+    function extractLinesFromDocx(doc) {
+        const WORD_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+        const pNodes = doc.getElementsByTagNameNS(WORD_NS, 'p');
         
-        const blocos = Array.from(tempDiv.childNodes);
+        let extractedLines = [];
         
+        for (let i = 0; i < pNodes.length; i++) {
+            const p = pNodes[i];
+            
+            let drawings = p.getElementsByTagNameNS(WORD_NS, 'drawing');
+            let picts = p.getElementsByTagNameNS(WORD_NS, 'pict');
+            // Fallback se o navegador não entender o namespace corretamente
+            if (!drawings || drawings.length === 0) drawings = p.getElementsByTagName('w:drawing');
+            if (!picts || picts.length === 0) picts = p.getElementsByTagName('w:pict');
+            
+            const hasImage = drawings.length > 0 || picts.length > 0;
+            
+            let currentLine = { text: '', isRed: false, hasImage: hasImage };
+            
+            const rNodes = p.getElementsByTagNameNS(WORD_NS, 'r');
+            let runs = rNodes && rNodes.length > 0 ? rNodes : p.getElementsByTagName('w:r');
+            
+            for(let j=0; j<runs.length; j++) {
+                const r = runs[j];
+                let runIsRed = false;
+                let color = r.getElementsByTagNameNS(WORD_NS, 'color')[0] || r.getElementsByTagName('w:color')[0];
+                
+                if (color) {
+                    const val = color.getAttribute('w:val');
+                    if (val && (val.toUpperCase() === 'FF0000' || val.toLowerCase() === 'red')) {
+                        runIsRed = true;
+                    }
+                }
+                
+                for (let k = 0; k < r.childNodes.length; k++) {
+                    const node = r.childNodes[k];
+                    const localName = node.localName || (node.nodeName ? node.nodeName.replace('w:', '') : '');
+                    
+                    if (localName === 't') {
+                        currentLine.text += node.textContent;
+                        if (runIsRed) currentLine.isRed = true;
+                    } else if (localName === 'br') {
+                        // Quebra de linha manual (Shift+Enter) divide a linha atual
+                        if (currentLine.text.trim() !== '' || currentLine.hasImage) {
+                            extractedLines.push({ text: currentLine.text.trim(), isRed: currentLine.isRed, hasImage: currentLine.hasImage });
+                        }
+                        currentLine = { text: '', isRed: false, hasImage: hasImage };
+                    }
+                }
+            }
+            
+            if (currentLine.text.trim() !== '' || currentLine.hasImage) {
+                extractedLines.push({ text: currentLine.text.trim(), isRed: currentLine.isRed, hasImage: currentLine.hasImage });
+            }
+        }
+        
+        return extractedLines;
+    }
+
+    function processParsedLines(lines) {
         let questionsExtracted = [];
-        let isOldFormat = html.includes("#Questão") && html.includes("#Resposta");
+        
+        // Verifica se é Formato Antigo pelo texto
+        let isOldFormat = lines.some(l => l.text.includes("#Questão")) && lines.some(l => l.text.includes("#Resposta"));
 
         if (isOldFormat) {
-            questionsExtracted = parseOldFormat(blocos);
+            questionsExtracted = parseOldFormat(lines);
         } else {
-            questionsExtracted = parseNewFormat(blocos);
+            questionsExtracted = parseNewFormat(lines);
         }
 
         // Limpa a UI atual
@@ -451,9 +495,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let countIgnoradas = 0;
 
         questionsExtracted.forEach(qData => {
-            // Ignora se contiver imagem detectada
-            const jsonStr = JSON.stringify(qData);
-            if (jsonStr.includes("IMAGEM_DETECTADA") || jsonStr.includes("<img")) {
+            // Ignora se contiver imagem
+            if (qData.hasImage) {
                 countIgnoradas++;
                 return;
             }
@@ -492,18 +535,17 @@ document.addEventListener('DOMContentLoaded', () => {
         alert(msg);
     }
 
-    function parseOldFormat(nodes) {
+    function parseOldFormat(lines) {
         const questions = [];
         let currentQ = null;
         let currentSection = null;
 
-        nodes.forEach(node => {
-            const text = node.textContent || "";
-            const html = node.outerHTML || node.textContent;
+        lines.forEach(line => {
+            const text = line.text;
 
             if (text.includes("#Questão")) {
                 if (currentQ) questions.push(currentQ);
-                currentQ = { enunciado: "", alternativas: [], feedback_geral: "" };
+                currentQ = { enunciado: "", alternativas: [], feedback_geral: "", hasImage: line.hasImage };
                 currentSection = "enunciado";
                 return;
             }
@@ -518,31 +560,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentSection = "justificativa";
                 return;
             }
+            
+            if (line.hasImage && currentQ) currentQ.hasImage = true;
 
             // Popula os campos
             if (currentQ && text.trim() !== "") {
                 if (currentSection === "enunciado") {
-                    currentQ.enunciado += html;
+                    currentQ.enunciado += (currentQ.enunciado ? "<br>" : "") + text;
                 } else if (currentSection === "resposta") {
                     let lastAlt = currentQ.alternativas[currentQ.alternativas.length - 1];
-                    // Regra: "RESPOSTA CORRETA." no texto da altenativa do docx velho?
-                    // Normalmente é "RESPOSTA CORRETA. Texto..." ou separado.
-                    let content = html;
-                    if (text.includes("RESPOSTA CORRETA.")) {
+                    let content = text;
+                    if (content.includes("RESPOSTA CORRETA.")) {
                         lastAlt.is_correct = true;
                         content = content.replace("RESPOSTA CORRETA.", "").trim();
                     }
-                    if (text.includes("RESPOSTA INCORRETA.")) {
+                    if (content.includes("RESPOSTA INCORRETA.")) {
                         content = content.replace("RESPOSTA INCORRETA.", "").trim();
                     }
-                    lastAlt.text += content;
+                    lastAlt.text += (lastAlt.text ? "<br>" : "") + content;
                 } else if (currentSection === "justificativa") {
-                    let content = html;
-                    if (text.includes("Resposta correta")) {
+                    let content = text;
+                    if (content.includes("Resposta correta")) {
                         content = content.replace("Resposta correta", "").trim();
                         if (content.startsWith(".")) content = content.substring(1).trim();
                     }
-                    currentQ.feedback_geral += content;
+                    currentQ.feedback_geral += (currentQ.feedback_geral ? "<br>" : "") + content;
                 }
             }
         });
@@ -551,33 +593,32 @@ document.addEventListener('DOMContentLoaded', () => {
         return questions;
     }
 
-    function parseNewFormat(nodes) {
+    function parseNewFormat(lines) {
         const questions = [];
         let currentQ = null;
         let currentSection = null;
         
-        // Ex regex: "13. " ou "1. " no inicio do paragrafo
         const questaoRegex = /^(\d+)\.\s*(.*)/;
-        // Ex regex: "a)", "b)", etc
-        const alternativaRegex = /^([a-e])\)\s*(.*)/;
+        const alternativaRegex = /^([a-e])\)\s*(.*)/i;
         
-        nodes.forEach(node => {
-            const text = node.textContent ? node.textContent.trim() : "";
-            const html = node.outerHTML || node.textContent;
+        lines.forEach(line => {
+            const text = line.text;
+            
+            if (line.hasImage && currentQ) currentQ.hasImage = true;
 
             let mQ = text.match(questaoRegex);
             if (mQ && mQ[1] && text.length > 2) {
                 if (currentQ) questions.push(currentQ);
-                let cleanEnunciado = node.innerHTML ? node.innerHTML.replace(/^\s*(?:<[^>]+>)*\s*\d+\.\s*(?:<\/[^>]+>)*\s*/, '') : mQ[2];
-                currentQ = { enunciado: cleanEnunciado, alternativas: [], feedback_geral: "" };
+                let cleanEnunciado = text.replace(questaoRegex, '$2');
+                currentQ = { enunciado: cleanEnunciado, alternativas: [], feedback_geral: "", hasImage: line.hasImage };
                 currentSection = "enunciado";
                 return;
             }
 
             let mAlt = text.match(alternativaRegex);
             if (mAlt && mAlt[1] && currentQ) {
-                let cleanAlt = node.innerHTML ? node.innerHTML.replace(/^\s*(?:<[^>]+>)*\s*[a-e]\)\s*(?:<\/[^>]+>)*\s*/i, '') : mAlt[2];
-                currentQ.alternativas.push({ text: cleanAlt, is_correct: false, letra: mAlt[1] });
+                let cleanAlt = text.replace(alternativaRegex, '$2');
+                currentQ.alternativas.push({ text: cleanAlt, is_correct: line.isRed, letra: mAlt[1].toLowerCase() });
                 currentSection = "resposta";
                 return;
             }
@@ -590,62 +631,53 @@ document.addEventListener('DOMContentLoaded', () => {
             // Se for continuação
             if (currentQ) {
                 if (currentSection === "enunciado" && text !== "") {
-                    currentQ.enunciado += html;
+                    currentQ.enunciado += (currentQ.enunciado ? "<br>" : "") + text;
                 } else if (currentSection === "resposta" && text !== "") {
                     let lastAlt = currentQ.alternativas[currentQ.alternativas.length - 1];
-                    if (lastAlt) lastAlt.text += html;
-                } else if (currentSection === "justificativa" && text !== "") {
-                    let isCoretaInfo = text.match(/Resposta correta:\s*(.*)/i);
-                    let correctLetraMatch = text.match(/correto o que se afirma em.*([a-e])/i) || text.match(/A alternativa correta.*([a-e])/i);
-                    
-                    if (isCoretaInfo) {
-                        currentQ.feedback_geral += html;
-                    } else {
-                        currentQ.feedback_geral += html;
+                    if (lastAlt) {
+                        lastAlt.text += (lastAlt.text ? "<br>" : "") + text;
+                        if (line.isRed) lastAlt.is_correct = true;
                     }
+                } else if (currentSection === "justificativa" && text !== "") {
+                    currentQ.feedback_geral += (currentQ.feedback_geral ? "<br>" : "") + text;
                 }
             }
         });
 
         if (currentQ) questions.push(currentQ);
         
-        // Pós-processamento para tentar achar a resposta correta pelas justificativas
+        // Pós-processamento para segurança (caso não tenha vindo pintado de vermelho, tenta achar na justificativa)
         questions.forEach(q => {
-            let feedbackText = q.feedback_geral.replace(/<[^>]*>?/gm, ''); // strip html
-            let foundLetra = null;
-            
-            // Ex: "Resposta correta: a)"
-            let mDir = feedbackText.match(/Resposta correta:\s*([a-e])[\)\.]/i);
-            if (mDir) {
-                foundLetra = mDir[1].toLowerCase();
-            } else {
-                // Realiza a busca por força bruta a partir da primeira letra mencionada no texto.
-                // Como não é trivial se não for formato exato, vamos assumir A se não achar (professor corrige na UI)
-            }
-            
-            // Mas, e se o Formato Novo não disser a letra? No exemplo:
-            // "Resposta correta: O fluxo de consciência é uma técnica..." 
-            // O texto da justificativa é igual ao texto da alternativa correta!
-            if (!foundLetra) {
-                let correctAnswerTextMatch = feedbackText.match(/Resposta correta:\s*(.*)/i);
-                if (correctAnswerTextMatch && correctAnswerTextMatch[1]) {
-                    let snippet = correctAnswerTextMatch[1].substring(0, 20).toLowerCase();
+            if (!q.alternativas.some(a => a.is_correct) && q.alternativas.length > 0) {
+                let feedbackText = q.feedback_geral;
+                let foundLetra = null;
+                
+                let mDir = feedbackText.match(/Resposta correta:\s*([a-e])[\)\.]/i);
+                if (mDir) {
+                    foundLetra = mDir[1].toLowerCase();
+                }
+                
+                if (!foundLetra) {
+                    let correctAnswerTextMatch = feedbackText.match(/Resposta correta:\s*(.*)/i);
+                    if (correctAnswerTextMatch && correctAnswerTextMatch[1]) {
+                        let snippet = correctAnswerTextMatch[1].substring(0, 20).toLowerCase();
+                        q.alternativas.forEach(alt => {
+                            let altTextSnippet = alt.text.substring(0, 20).toLowerCase();
+                            if (altTextSnippet && altTextSnippet === snippet) {
+                                alt.is_correct = true;
+                            }
+                        });
+                    }
+                } else {
                     q.alternativas.forEach(alt => {
-                        let altTextSnippet = alt.text.replace(/<[^>]*>?/gm, '').substring(0, 20).toLowerCase();
-                        if (altTextSnippet && altTextSnippet === snippet) {
-                            alt.is_correct = true;
-                        }
+                        if (alt.letra === foundLetra) alt.is_correct = true;
                     });
                 }
-            } else {
-                q.alternativas.forEach(alt => {
-                    if (alt.letra === foundLetra) alt.is_correct = true;
-                });
-            }
-            
-            // Ação de contingência (Fallback): assinala a primeira alternativa caso nenhuma seja identificada, a fim de preservar a integridade visual da interface.
-            if (!q.alternativas.some(a => a.is_correct) && q.alternativas.length > 0) {
-                q.alternativas[0].is_correct = true;
+                
+                // Ação de contingência (Fallback): assinala a primeira alternativa caso nenhuma seja identificada, a fim de preservar a integridade visual da interface.
+                if (!q.alternativas.some(a => a.is_correct) && q.alternativas.length > 0) {
+                    q.alternativas[0].is_correct = true;
+                }
             }
         });
 
