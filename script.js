@@ -568,14 +568,16 @@ document.addEventListener('DOMContentLoaded', () => {
             let mQ = text.match(questaoRegex);
             if (mQ && mQ[1] && text.length > 2) {
                 if (currentQ) questions.push(currentQ);
-                currentQ = { enunciado: node.innerHTML ? node.innerHTML.replace(mQ[0], mQ[2]) : mQ[2], alternativas: [], feedback_geral: "" };
+                let cleanEnunciado = node.innerHTML ? node.innerHTML.replace(/^\s*(?:<[^>]+>)*\s*\d+\.\s*(?:<\/[^>]+>)*\s*/, '') : mQ[2];
+                currentQ = { enunciado: cleanEnunciado, alternativas: [], feedback_geral: "" };
                 currentSection = "enunciado";
                 return;
             }
 
             let mAlt = text.match(alternativaRegex);
             if (mAlt && mAlt[1] && currentQ) {
-                currentQ.alternativas.push({ text: node.innerHTML ? node.innerHTML.replace(mAlt[0], mAlt[2]) : mAlt[2], is_correct: false, letra: mAlt[1] });
+                let cleanAlt = node.innerHTML ? node.innerHTML.replace(/^\s*(?:<[^>]+>)*\s*[a-e]\)\s*(?:<\/[^>]+>)*\s*/i, '') : mAlt[2];
+                currentQ.alternativas.push({ text: cleanAlt, is_correct: false, letra: mAlt[1] });
                 currentSection = "resposta";
                 return;
             }
