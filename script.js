@@ -432,7 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const hasImage = drawings.length > 0 || picts.length > 0;
             
-            let currentLine = { text: '', isRed: false, hasImage: hasImage };
+            let currentLine = { text: '', isRed: false, isBold: false, hasImage: hasImage };
             
             const rNodes = p.getElementsByTagNameNS(WORD_NS, 'r');
             let runs = rNodes && rNodes.length > 0 ? rNodes : p.getElementsByTagName('w:r');
@@ -449,6 +449,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 
+                let runIsBold = false;
+                let b = r.getElementsByTagNameNS(WORD_NS, 'b')[0] || r.getElementsByTagName('w:b')[0];
+                if (b) {
+                    const val = b.getAttribute('w:val');
+                    if (val === null || val === '1' || val.toLowerCase() === 'true' || val.toLowerCase() === 'on') {
+                        runIsBold = true;
+                    }
+                }
+                
                 for (let k = 0; k < r.childNodes.length; k++) {
                     const node = r.childNodes[k];
                     const localName = node.localName || (node.nodeName ? node.nodeName.replace('w:', '') : '');
@@ -456,18 +465,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (localName === 't') {
                         currentLine.text += node.textContent;
                         if (runIsRed) currentLine.isRed = true;
+                        if (runIsBold) currentLine.isBold = true;
                     } else if (localName === 'br') {
                         // Quebra de linha manual (Shift+Enter) divide a linha atual
                         if (currentLine.text.trim() !== '' || currentLine.hasImage) {
-                            extractedLines.push({ text: currentLine.text.trim(), isRed: currentLine.isRed, hasImage: currentLine.hasImage });
+                            extractedLines.push({ text: currentLine.text.trim(), isRed: currentLine.isRed, isBold: currentLine.isBold, hasImage: currentLine.hasImage });
                         }
-                        currentLine = { text: '', isRed: false, hasImage: hasImage };
+                        currentLine = { text: '', isRed: false, isBold: false, hasImage: hasImage };
                     }
                 }
             }
             
             if (currentLine.text.trim() !== '' || currentLine.hasImage) {
-                extractedLines.push({ text: currentLine.text.trim(), isRed: currentLine.isRed, hasImage: currentLine.hasImage });
+                extractedLines.push({ text: currentLine.text.trim(), isRed: currentLine.isRed, isBold: currentLine.isBold, hasImage: currentLine.hasImage });
             }
         }
         
@@ -623,7 +633,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (text.startsWith("Justificativa") || text.startsWith("Justificativas")) {
+            // Identifica 'Justificativa' ou 'Justificativas' de forma case-insensitive, exigindo que esteja em negrito.
+            if (/^justificativas?/i.test(text) && line.isBold) {
                 currentSection = "justificativa";
                 return;
             }
