@@ -1,0 +1,17 @@
+
+# --- Seguranca e Cache ---
+.env
+.env.*
+*.db
+*.sqlite3
+__pycache__/
+*.py[cod]
+*.class
+node_modules/
+dist/
+build/
+*.zip
+*.rar
+*.tar.gz
+.DS_Store
+
