@@ -223,9 +223,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // === FUNÇÕES DE EXPORTAÇÃO (XML MOODLE) ===
 
     async function exportXML(numArquivos) {
-        const cards = questionsContainer.querySelectorAll('.question-card');
+        // Só convertem: questões normais e as aprovadas. Ficam de fora as que
+        // estão em revisão pendente ou foram ignoradas na triagem.
+        const cards = [...questionsContainer.querySelectorAll('.question-card')]
+            .filter(c => c.dataset.review !== 'pending' && c.dataset.review !== 'ignored');
         if (cards.length === 0) {
-            alert("Adicione pelo menos uma questão para exportar.");
+            const emRevisao = questionsContainer.querySelectorAll('.question-card.needs-review').length;
+            alert(emRevisao > 0
+                ? "Nenhuma questão pronta. Aprove as questões da seção 'Para revisão' (ou adicione questões)."
+                : "Adicione pelo menos uma questão para exportar.");
             return;
         }
 
@@ -486,7 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function processParsedLines(lines) {
         let questionsExtracted = [];
-        
+
         // Verifica se é Formato Antigo pelo texto
         let isOldFormat = lines.some(l => l.text.includes("#Questão")) && lines.some(l => l.text.includes("#Resposta"));
 
@@ -500,49 +506,144 @@ document.addEventListener('DOMContentLoaded', () => {
         questionsContainer.innerHTML = '';
         questionCounter = 0;
 
-        // Injeta as questoes validas na UI
-        let countAdicionadas = 0;
-        let countIgnoradas = 0;
+        // Importa TUDO que deu para entender. O que ficou duvidoso vai para uma
+        // seção "Para revisão" ao fim, sinalizado e FORA da conversão até o
+        // usuário Aprovar (ou ele pode Ignorar / Excluir — triagem manual).
+        let countOk = 0;
+        const cardsRevisao = [];
 
         questionsExtracted.forEach(qData => {
-            // Ignora se contiver imagem
-            if (qData.hasImage) {
-                countIgnoradas++;
-                return;
-            }
-
             const qCard = addQuestion();
-            const enunciadoEditor = qCard.querySelector('.enunciado-editor');
-            const feedbackEditor = qCard.querySelector('.feedback-editor');
-            const altList = qCard.querySelector('.alternatives-list');
-            
-            // Limpa alternativas default
-            altList.innerHTML = '';
+            preencherCard(qCard, qData);
 
-            enunciadoEditor.innerHTML = qData.enunciado || "";
-            feedbackEditor.innerHTML = qData.feedback_geral || "";
-
-            qData.alternativas.forEach(alt => {
-                const altItem = addAlternative(altList, qCard.dataset.id);
-                const altEditor = altItem.querySelector('.alternative-editor');
-                altEditor.innerHTML = alt.text || "";
-                if (alt.is_correct) {
-                    altItem.querySelector('.correct-radio').checked = true;
-                }
-            });
-
-            countAdicionadas++;
+            const motivos = avaliarQuestao(qData);
+            if (motivos.length) {
+                marcarParaRevisao(qCard, motivos);
+                cardsRevisao.push(qCard);
+            } else {
+                countOk++;
+            }
         });
 
-        if (countAdicionadas === 0) {
-            addQuestion(); // adiciona 1 vazia caso tudo tenha sido ignorado
+        // Empurra as questões de revisão para o fim, atrás de um divisor.
+        if (cardsRevisao.length) {
+            questionsContainer.appendChild(criarDivisorRevisao(cardsRevisao.length));
+            cardsRevisao.forEach(c => questionsContainer.appendChild(c));
         }
 
-        let msg = `Extração concluída!\n${countAdicionadas} questões foram importadas para o editor.`;
-        if (countIgnoradas > 0) {
-            msg += `\n${countIgnoradas} questões foram ignoradas por conterem imagens.`;
+        if (countOk === 0 && cardsRevisao.length === 0) {
+            addQuestion(); // nada extraído: deixa 1 card vazio
+        }
+        updateQuestionNumbers();
+
+        let msg = `Extração concluída!\n${countOk} questão(ões) importada(s) e prontas para converter.`;
+        if (cardsRevisao.length) {
+            msg += `\n${cardsRevisao.length} sinalizada(s) ao fim para revisão — não serão convertidas até você Aprovar.`;
         }
         alert(msg);
+    }
+
+    // Preenche um card do editor com os dados de uma questão parseada.
+    function preencherCard(qCard, qData) {
+        const enunciadoEditor = qCard.querySelector('.enunciado-editor');
+        const feedbackEditor = qCard.querySelector('.feedback-editor');
+        const altList = qCard.querySelector('.alternatives-list');
+
+        altList.innerHTML = ''; // limpa as alternativas default
+        enunciadoEditor.innerHTML = qData.enunciado || "";
+        feedbackEditor.innerHTML = qData.feedback_geral || "";
+
+        (qData.alternativas || []).forEach(alt => {
+            const altItem = addAlternative(altList, qCard.dataset.id);
+            altItem.querySelector('.alternative-editor').innerHTML = alt.text || "";
+            if (alt.is_correct) altItem.querySelector('.correct-radio').checked = true;
+        });
+        // Garante o mínimo de 2 alternativas para o card ser editável.
+        while (altList.children.length < 2) addAlternative(altList, qCard.dataset.id);
+    }
+
+    // Decide se uma questão precisa de revisão manual e por quê.
+    function avaliarQuestao(q) {
+        const motivos = [];
+        if (q.hasImage) motivos.push('contém imagem (insira manualmente)');
+        const enun = (q.enunciado || '').replace(/<[^>]*>/g, '').trim();
+        if (!enun) motivos.push('enunciado vazio');
+        const alts = q.alternativas || [];
+        if (alts.length < 2) motivos.push('menos de 2 alternativas');
+        if (q.respostaChutada || !alts.some(a => a.is_correct)) motivos.push('resposta correta não identificada');
+        return [...new Set(motivos)];
+    }
+
+    // Marca o card como "para revisão": banner com o motivo + ações de triagem.
+    function marcarParaRevisao(qCard, motivos) {
+        qCard.classList.add('needs-review');
+        qCard.dataset.review = 'pending';
+
+        const banner = document.createElement('div');
+        banner.className = 'review-banner';
+        banner.innerHTML = `
+            <div class="review-reason">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>Não entendi 100%: ${motivos.join(' · ')}. Revise e decida.</span>
+            </div>
+            <div class="review-actions">
+                <button type="button" class="btn btn-review btn-approve"><i class="fa-solid fa-check"></i> Aprovar</button>
+                <button type="button" class="btn btn-review btn-ignore"><i class="fa-solid fa-ban"></i> Ignorar</button>
+                <button type="button" class="btn btn-review btn-delete"><i class="fa-solid fa-trash"></i> Excluir</button>
+            </div>`;
+        qCard.insertBefore(banner, qCard.firstChild);
+
+        banner.querySelector('.btn-approve').addEventListener('click', () => aprovarRevisao(qCard, banner));
+        banner.querySelector('.btn-ignore').addEventListener('click', () => alternarIgnorar(qCard, banner));
+        banner.querySelector('.btn-delete').addEventListener('click', () => {
+            qCard.remove();
+            updateQuestionNumbers();
+            atualizarContadorRevisao();
+        });
+    }
+
+    // Aprovar: entra no lote de conversão e sobe para junto das questões válidas.
+    function aprovarRevisao(qCard, banner) {
+        qCard.dataset.review = 'approved';
+        qCard.classList.remove('needs-review', 'ignored');
+        banner.remove();
+        const divisor = document.getElementById('review-divider');
+        if (divisor) questionsContainer.insertBefore(qCard, divisor);
+        updateQuestionNumbers();
+        atualizarContadorRevisao();
+    }
+
+    // Ignorar: fica visível mas fora da conversão (alterna com Reverter).
+    function alternarIgnorar(qCard, banner) {
+        const btn = banner.querySelector('.btn-ignore');
+        if (qCard.dataset.review === 'ignored') {
+            qCard.dataset.review = 'pending';
+            qCard.classList.remove('ignored');
+            btn.innerHTML = '<i class="fa-solid fa-ban"></i> Ignorar';
+        } else {
+            qCard.dataset.review = 'ignored';
+            qCard.classList.add('ignored');
+            btn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Reverter';
+        }
+    }
+
+    function criarDivisorRevisao(n) {
+        const div = document.createElement('div');
+        div.id = 'review-divider';
+        div.className = 'review-divider';
+        div.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Para revisão — o conversor não entendeu totalmente
+            (<span class="review-count">${n}</span>). Não entram no XML até você <strong>Aprovar</strong>.</span>`;
+        return div;
+    }
+
+    function atualizarContadorRevisao() {
+        const divisor = document.getElementById('review-divider');
+        if (!divisor) return;
+        const pendentes = questionsContainer.querySelectorAll('.question-card.needs-review').length;
+        const countSpan = divisor.querySelector('.review-count');
+        if (countSpan) countSpan.textContent = pendentes;
+        if (pendentes === 0) divisor.remove();
     }
 
     function parseOldFormat(lines) {
@@ -685,9 +786,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
                 
-                // Ação de contingência (Fallback): assinala a primeira alternativa caso nenhuma seja identificada, a fim de preservar a integridade visual da interface.
+                // Não identificamos a correta com confiança. Marca a primeira só
+                // para manter um estado válido na UI, mas SINALIZA para revisão
+                // manual (respostaChutada) — a questão não é convertida enquanto
+                // o usuário não aprovar. Antes isso era um chute silencioso.
                 if (!q.alternativas.some(a => a.is_correct) && q.alternativas.length > 0) {
                     q.alternativas[0].is_correct = true;
+                    q.respostaChutada = true;
                 }
             }
         });

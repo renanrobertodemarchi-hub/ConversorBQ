@@ -459,3 +459,70 @@ body {
         gap: 1.5rem;
     }
 }
+
+/* === Triagem: questões importadas do DOCX que precisam de revisão === */
+:root { --warning: #f59e0b; --warning-soft: rgba(245, 158, 11, 0.12); }
+
+/* Divisor que separa as questões prontas das que precisam de revisão. */
+.review-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 1.5rem 0 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    border: 1px dashed var(--warning);
+    background: var(--warning-soft);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+.review-divider i { color: var(--warning); }
+
+/* Card sinalizado para revisão: borda âmbar para destacar do fluxo normal. */
+.question-card.needs-review {
+    border-color: var(--warning);
+    box-shadow: 0 0 0 1px var(--warning-soft), var(--shadow-soft);
+}
+.question-card.ignored {
+    opacity: 0.55;
+    filter: grayscale(0.4);
+}
+
+/* Banner no topo do card com o motivo e as ações de triagem. */
+.review-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 10px;
+    background: var(--warning-soft);
+    border: 1px solid var(--warning);
+}
+.review-reason {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    min-width: 200px;
+    flex: 1;
+}
+.review-reason i { color: var(--warning); }
+.review-actions { display: flex; gap: 0.4rem; }
+
+.btn-review {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.8rem;
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+    background: var(--surface);
+    color: var(--text-primary);
+}
+.btn-review.btn-approve { border-color: var(--success); color: var(--success); }
+.btn-review.btn-approve:hover { background: var(--success); color: #06231a; }
+.btn-review.btn-ignore:hover { border-color: var(--warning); color: var(--warning); }
+.btn-review.btn-delete:hover { border-color: var(--danger); color: var(--danger); }
